@@ -3,7 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { Observable, tap } from "rxjs";
 import { AUDIT_ACTION_KEY } from "./audit.decorator";
 import { AuditService } from "./audit.service";
-import { AuthUser } from "../auth/current-user.decorator";
+import type { AuthUser } from "../auth/current-user.decorator";
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {

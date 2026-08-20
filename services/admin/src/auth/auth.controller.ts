@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Ip, Param, Post, Req, Res, UnauthorizedException } from "@nestjs/common";
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
-import { CurrentUser, AuthUser } from "./current-user.decorator";
+import { CurrentUser, type AuthUser } from "./current-user.decorator";
 import { Public } from "./public.decorator";
 
 @Controller("auth")
