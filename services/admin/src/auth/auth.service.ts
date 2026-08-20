@@ -39,4 +39,11 @@ export class AuthService {
     await this.auditService.record({ action: "auth:login", userId: user.id, username: user.username, ip, userAgent });
     return { accessToken: this.signAccess(user), refreshToken: refresh.raw };
   }
+
+  async refresh(rawToken: string, ip?: string, userAgent?: string) {
+    const { userId, raw } = await this.refreshTokenService.rotate(rawToken, { ip, userAgent });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.status !== "ACTIVE") throw new UnauthorizedException();
+    return { accessToken: this.signAccess(user), refreshToken: raw };
+  }
 }
