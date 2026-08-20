@@ -1,10 +1,11 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { PrismaModule } from "./prisma/prisma.module";
 import { AuthModule } from "./auth/auth.module";
 import { AuditModule } from "./audit/audit.module";
+import { AuditInterceptor } from "./audit/audit.interceptor";
 import { JwtAuthGuard } from "./auth/jwt-auth.guard";
 import { AuthzModule } from "./authz/authz.module";
 import { PermissionsGuard } from "./authz/permissions.guard";
@@ -32,6 +33,7 @@ import { PermissionsModule } from "./permissions/permissions.module";
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })
 export class AppModule {}

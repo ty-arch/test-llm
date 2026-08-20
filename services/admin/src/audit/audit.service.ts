@@ -30,4 +30,18 @@ export class AuditService {
       },
     });
   }
+
+  async list(query: { action?: string; username?: string; page?: number; pageSize?: number }) {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where = {
+      ...(query.action ? { action: query.action } : {}),
+      ...(query.username ? { username: { contains: query.username } } : {}),
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.auditLog.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize }),
+      this.prisma.auditLog.count({ where }),
+    ]);
+    return { items, total, page, pageSize };
+  }
 }
