@@ -14,7 +14,8 @@ COPY services/chat ./services/chat
 RUN bun install
 
 ENV NODE_ENV=production
-ENV PORT=4001
+ARG CHAT_API_PORT=4001
+ENV CHAT_API_PORT=$CHAT_API_PORT
 WORKDIR /app/services/chat
 EXPOSE 4001
 

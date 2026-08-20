@@ -1,6 +1,6 @@
 "use client";
 import "./globals.css";
-import { HeroUIProvider } from "@heroui/react";
+import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import { AuthProvider } from "@/components/auth-provider";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -8,6 +8,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-CN">
       <body>
         <HeroUIProvider>
+          <ToastProvider placement="top-right" />
           <AuthProvider>{children}</AuthProvider>
         </HeroUIProvider>
       </body>

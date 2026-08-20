@@ -10,7 +10,8 @@ services:
     command: ["bun", "run", "dev"]
     environment:
       NODE_ENV: development
-      PORT: "4001"
+      CHAT_API_PORT: "${CHAT_API_PORT:-4001}"
+      CHAT_WEB_PORT: "${CHAT_WEB_PORT:-3002}"
 
   chat-web:
     volumes:
@@ -22,7 +23,8 @@ services:
     command: ["bun", "run", "dev"]
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_BASE_URL: "http://chat:4001"
+      NEXT_PUBLIC_API_BASE_URL: "http://chat:${CHAT_API_PORT:-4001}"
+      CHAT_WEB_PORT: "${CHAT_WEB_PORT:-3002}"
 
   admin:
     volumes:
@@ -32,7 +34,8 @@ services:
     command: ["bun", "run", "dev"]
     environment:
       NODE_ENV: development
-      PORT: "4002"
+      ADMIN_API_PORT: "${ADMIN_API_PORT:-4002}"
+      ADMIN_WEB_PORT: "${ADMIN_WEB_PORT:-3003}"
 
   admin-web:
     volumes:
@@ -43,4 +46,5 @@ services:
     command: ["bun", "run", "dev"]
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_BASE_URL: "http://localhost:4002"
+      NEXT_PUBLIC_API_BASE_URL: "http://localhost:${ADMIN_API_PORT:-4002}"
+      ADMIN_WEB_PORT: "${ADMIN_WEB_PORT:-3003}"

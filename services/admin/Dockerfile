@@ -18,7 +18,8 @@ RUN bun install
 RUN cd services/admin && bunx prisma generate
 
 ENV NODE_ENV=production
-ENV PORT=4002
+ARG ADMIN_API_PORT=4002
+ENV ADMIN_API_PORT=$ADMIN_API_PORT
 WORKDIR /app/services/admin
 EXPOSE 4002
 

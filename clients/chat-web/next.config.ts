@@ -2,7 +2,7 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4001";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? `http://localhost:${process.env.CHAT_API_PORT ?? 4001}`;
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@autix/contracts"],

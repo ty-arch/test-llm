@@ -4,15 +4,15 @@ services:
       context: ../..
       dockerfile: services/chat/Dockerfile
     ports:
-      - "4001:4001"
+      - "${CHAT_API_PORT:-4001}:${CHAT_API_PORT:-4001}"
     environment:
-      PORT: "4001"
+      CHAT_API_PORT: "${CHAT_API_PORT:-4001}"
     healthcheck:
       test:
         - "CMD"
         - "bun"
         - "-e"
-        - "fetch('http://localhost:4001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        - "fetch('http://localhost:${CHAT_API_PORT:-4001}/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,11 +23,12 @@ services:
       context: ../..
       dockerfile: clients/chat-web/Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: "http://chat:4001"
+        NEXT_PUBLIC_API_BASE_URL: "http://chat:${CHAT_API_PORT:-4001}"
     ports:
-      - "3002:3002"
+      - "${CHAT_WEB_PORT:-3002}:${CHAT_WEB_PORT:-3002}"
     environment:
-      NEXT_PUBLIC_API_BASE_URL: "http://chat:4001"
+      NEXT_PUBLIC_API_BASE_URL: "http://chat:${CHAT_API_PORT:-4001}"
+      PORT: "${CHAT_WEB_PORT:-3002}"
     depends_on:
       chat:
         condition: service_healthy
@@ -39,7 +40,7 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: admin
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -56,10 +57,11 @@ services:
     environment:
       DATABASE_URL: "postgresql://admin:admin@postgres:5432/admin?schema=public"
       JWT_SECRET: "dev-secret"
-      PORT: "4002"
+      ADMIN_API_PORT: "${ADMIN_API_PORT:-4002}"
+      CORS_ORIGIN: "http://localhost:${ADMIN_WEB_PORT:-3003}"
       SEED_ADMIN_PASSWORD: "admin123"
     ports:
-      - "4002:4002"
+      - "${ADMIN_API_PORT:-4002}:${ADMIN_API_PORT:-4002}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,7 +70,7 @@ services:
         - "CMD"
         - "bun"
         - "-e"
-        - "fetch('http://localhost:4002/auth/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        - "fetch('http://localhost:${ADMIN_API_PORT:-4002}/auth/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -78,8 +80,12 @@ services:
     build:
       context: ../..
       dockerfile: clients/admin-web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://localhost:${ADMIN_API_PORT:-4002}"
     ports:
-      - "3003:3003"
+      - "${ADMIN_WEB_PORT:-3003}:${ADMIN_WEB_PORT:-3003}"
+    environment:
+      PORT: "${ADMIN_WEB_PORT:-3003}"
     depends_on:
       admin:
         condition: service_healthy

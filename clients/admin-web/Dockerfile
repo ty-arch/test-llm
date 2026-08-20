@@ -24,7 +24,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN cd clients/admin-web && bun run build
 
 ENV NODE_ENV=production
-ENV PORT=3003
+ARG PORT=3003
+ENV PORT=$PORT
 ENV HOSTNAME=0.0.0.0
 WORKDIR /app/clients/admin-web
 EXPOSE 3003

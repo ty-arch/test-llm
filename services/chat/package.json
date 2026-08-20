@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "bun run --watch src/main.ts",
+    "dev": "bun run --env-file=../../.env --watch src/main.ts",
     "build": "tsc",
     "start": "bun run src/main.ts",
     "typecheck": "tsc --noEmit"
