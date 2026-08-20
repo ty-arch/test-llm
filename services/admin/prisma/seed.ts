@@ -45,8 +45,10 @@ async function main() {
     });
     menuIds[m.code] = p.id;
   }
+  const apiIds: Record<string, string> = {};
   for (const code of apis) {
-    await prisma.permission.upsert({ where: { code }, update: {}, create: { code, name: code, type: "API" } });
+    const p = await prisma.permission.upsert({ where: { code }, update: {}, create: { code, name: code, type: "API" } });
+    apiIds[code] = p.id;
   }
   for (const menuCode of Object.keys(menuIds)) {
     const menuPerm = await prisma.permission.findUnique({ where: { code: menuCode } });
@@ -54,6 +56,14 @@ async function main() {
       where: { roleId_permissionId: { roleId: operator.id, permissionId: menuPerm!.id } },
       update: {},
       create: { roleId: operator.id, permissionId: menuPerm!.id },
+    });
+  }
+  for (const apiCode of Object.keys(apiIds)) {
+    const apiPerm = await prisma.permission.findUnique({ where: { code: apiCode } });
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: operator.id, permissionId: apiPerm!.id } },
+      update: {},
+      create: { roleId: operator.id, permissionId: apiPerm!.id },
     });
   }
 }

@@ -51,4 +51,19 @@ describe("RBAC e2e", () => {
     const res = await request(app.getHttpServer()).get("/users");
     expect(res.status).toBe(401);
   });
+
+  it("user:create 传入 isSuperAdmin=true 时创建的用户仍为非超管", async () => {
+    const login = await request(app.getHttpServer())
+      .post("/auth/login")
+      .send({ username: "admin", password: "admin123" });
+    expect(login.status).toBe(201);
+    const access = login.body.accessToken;
+
+    const created = await request(app.getHttpServer())
+      .post("/users")
+      .set("Authorization", `Bearer ${access}`)
+      .send({ username: `escalation_probe_${Date.now()}`, password: "probe123", isSuperAdmin: true });
+    expect(created.status).toBe(201);
+    expect(created.body.isSuperAdmin).toBe(false);
+  });
 });

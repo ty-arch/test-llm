@@ -26,7 +26,7 @@ export class UsersService {
         username: dto.username,
         passwordHash,
         nickname: dto.nickname,
-        isSuperAdmin: dto.isSuperAdmin ?? false,
+        isSuperAdmin: false,
         roles: dto.roleIds?.length ? { create: dto.roleIds.map((roleId) => ({ roleId })) } : undefined,
       },
       include: { roles: { include: { role: true } } },
