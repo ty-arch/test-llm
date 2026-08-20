@@ -6,6 +6,8 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { AuthModule } from "./auth/auth.module";
 import { AuditModule } from "./audit/audit.module";
 import { JwtAuthGuard } from "./auth/jwt-auth.guard";
+import { AuthzModule } from "./authz/authz.module";
+import { PermissionsGuard } from "./authz/permissions.guard";
 
 @Module({
   imports: [
@@ -13,6 +15,7 @@ import { JwtAuthGuard } from "./auth/jwt-auth.guard";
     PrismaModule,
     AuthModule,
     AuditModule,
+    AuthzModule,
     // The global guard only verifies (never signs), so signOptions is intentionally omitted.
     // registerAsync (not register) so JWT_SECRET resolves after ConfigModule loads .env.
     JwtModule.registerAsync({
@@ -20,6 +23,9 @@ import { JwtAuthGuard } from "./auth/jwt-auth.guard";
       useFactory: (config: ConfigService) => ({ secret: config.get<string>("JWT_SECRET") }),
     }),
   ],
-  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
+  ],
 })
 export class AppModule {}
