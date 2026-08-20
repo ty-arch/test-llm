@@ -11,7 +11,7 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["node", "bun"]
+    "types": ["node", "jest"]
   },
   "include": ["src", "prisma", "test"]
 }
