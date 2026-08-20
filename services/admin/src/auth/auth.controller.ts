@@ -10,6 +10,12 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
+  @Get("health")
+  health() {
+    return { ok: true };
+  }
+
+  @Public()
   @Post("login")
   async login(@Body() dto: LoginDto, @Ip() ip: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto, ip, req.headers["user-agent"]);
