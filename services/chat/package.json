@@ -3,20 +3,25 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "bun run --env-file=../../.env --watch src/main.ts",
+    "dev": "bun run --env-file=../../.env --env-file=.env --watch src/main.ts",
     "build": "tsc",
-    "start": "bun run src/main.ts",
+    "start": "bun run --env-file=../../.env --env-file=.env src/main.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@autix/contracts": "workspace:*",
+    "@langchain/core": "^1.2.9",
+    "@langchain/openai": "^1.5.9",
     "@nestjs/common": "^11.2.1",
     "@nestjs/core": "^11.2.1",
     "@nestjs/platform-express": "^11.2.1",
+    "js-yaml": "^5.3.0",
+    "langchain": "^1.5.10",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
   }

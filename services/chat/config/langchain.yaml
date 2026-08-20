@@ -1,0 +1,18 @@
+# LangChain 运行参数（仅运行参数；密钥/服务地址一律走 process.env，见 getApiKeys()）
+llm:
+  provider: deepseek
+  model: deepseek-v4-pro
+  temperature: 0.1
+  maxTokens: 2048
+  timeout: 60000
+
+retrieval:
+  topK: 5
+  scoreThreshold: 0.7
+
+tools:
+  enabled: false
+
+features:
+  stream: true
+  batch: true

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { APP_NAME } from "@autix/contracts";
+import { apiFetch } from "@/lib/api";
 
 export default function Home() {
   const [message, setMessage] = useState<string>("");
@@ -13,12 +14,11 @@ export default function Home() {
     setError("");
     setMessage("");
     try {
-      const res = await fetch("/api/hello");
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      setMessage(data.message);
+      const data = await apiFetch<{ content: string }>("/api/langchain/invoke", {
+        method: "POST",
+        body: JSON.stringify({ input: "用户注册时必须绑定手机号，密码至少8个字符" }),
+      });
+      setMessage(data.content);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
