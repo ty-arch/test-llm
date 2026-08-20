@@ -6,6 +6,7 @@ import { PasswordService } from "./password.service";
 import { RefreshTokenService } from "./refresh-token.service";
 import { AuditService } from "../audit/audit.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { PermissionsService } from "../authz/permissions.service";
 
 const mockUser = { id: "u1", username: "admin", passwordHash: "hash", isSuperAdmin: true, status: "ACTIVE", nickname: null };
 
@@ -16,6 +17,10 @@ describe("AuthService", () => {
   const refresh = { issue: jest.fn() };
   const jwt = { sign: jest.fn().mockReturnValue("access-token") };
   const audit = { record: jest.fn() };
+  const permissions = {
+    codesForUser: jest.fn().mockResolvedValue(new Set()),
+    menuTreeForUser: jest.fn().mockResolvedValue([]),
+  };
 
   beforeEach(async () => {
     const mod = await Test.createTestingModule({
@@ -26,6 +31,7 @@ describe("AuthService", () => {
         { provide: RefreshTokenService, useValue: refresh },
         { provide: JwtService, useValue: jwt },
         { provide: AuditService, useValue: audit },
+        { provide: PermissionsService, useValue: permissions },
       ],
     }).compile();
     svc = mod.get(AuthService);

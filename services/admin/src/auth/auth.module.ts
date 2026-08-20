@@ -5,9 +5,11 @@ import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
 import { PasswordService } from "./password.service";
 import { RefreshTokenService } from "./refresh-token.service";
+import { AuthzModule } from "../authz/authz.module";
 
 @Module({
   imports: [
+    AuthzModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

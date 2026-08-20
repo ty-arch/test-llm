@@ -3,6 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { sha256 } from "../common/sha256";
+import { PermissionsService } from "../authz/permissions.service";
 import { PasswordService } from "./password.service";
 import { RefreshTokenService } from "./refresh-token.service";
 import { LoginDto } from "./dto/login.dto";
@@ -15,6 +16,7 @@ export class AuthService {
     private refreshTokenService: RefreshTokenService,
     private jwtService: JwtService,
     private auditService: AuditService,
+    private permissionsService: PermissionsService,
   ) {}
 
   private signAccess(user: { id: string; username: string; isSuperAdmin: boolean }): string {
@@ -61,9 +63,21 @@ export class AuthService {
     return this.refreshTokenService.list(userId);
   }
 
-  // Temporary placeholder — Task 13 replaces this with the full { user, permissions, menuTree } return.
-  async me(id: string) {
-    return { id };
+  async me(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    const [permissions, menuTree] = await Promise.all([
+      this.permissionsService.codesForUser(userId),
+      this.permissionsService.menuTreeForUser(userId, user.isSuperAdmin),
+    ]);
+    return {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      isSuperAdmin: user.isSuperAdmin,
+      permissions: user.isSuperAdmin ? ["*"] : [...permissions],
+      menuTree,
+    };
   }
 
   async revokeSession(userId: string, id: string): Promise<void> {
