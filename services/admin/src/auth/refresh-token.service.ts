@@ -53,4 +53,26 @@ export class RefreshTokenService {
       data: { revokedAt: new Date() },
     });
   }
+
+  async revoke(rawToken: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { tokenHash: sha256(rawToken), revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  async list(userId: string) {
+    return this.prisma.refreshToken.findMany({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+      select: { id: true, ip: true, userAgent: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async revokeById(userId: string, id: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { id, userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
 }

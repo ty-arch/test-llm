@@ -34,4 +34,13 @@ export class AuthController {
     });
     return { accessToken: result.accessToken };
   }
+
+  @Post("logout")
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    await this.authService.logout(req.cookies?.refresh_token);
+    res.clearCookie("refresh_token", { path: "/auth" });
+    return { ok: true };
+  }
+
+  // @Get("sessions") / @Post("sessions/:id/revoke") 在 Task 7 的 @CurrentUser 就绪后添加
 }

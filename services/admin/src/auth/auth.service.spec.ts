@@ -9,7 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
 
 const mockUser = { id: "u1", username: "admin", passwordHash: "hash", isSuperAdmin: true, status: "ACTIVE", nickname: null };
 
-describe("AuthService.login", () => {
+describe("AuthService", () => {
   let svc: AuthService;
   const prisma = { user: { findUnique: jest.fn() } };
   const password = { verify: jest.fn() };
@@ -47,5 +47,16 @@ describe("AuthService.login", () => {
     password.verify.mockResolvedValue(false);
     await expect(svc.login({ username: "admin", password: "bad" })).rejects.toBeInstanceOf(UnauthorizedException);
     expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: "auth:login", detail: { success: false } }));
+  });
+
+  it("logout 吊销对应 refresh 并写审计", async () => {
+    const findUnique = jest.fn().mockResolvedValue({ id: "rt1", userId: "u1" });
+    (prisma as any).refreshToken = { findUnique };
+    const revoke = jest.fn().mockResolvedValue(undefined);
+    (svc as any).refreshTokenService = { ...refresh, revoke };
+
+    await svc.logout("raw");
+    expect(revoke).toHaveBeenCalledWith("raw");
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: "auth:logout" }));
   });
 });

@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { sha256 } from "../common/sha256";
 import { PasswordService } from "./password.service";
 import { RefreshTokenService } from "./refresh-token.service";
 import { LoginDto } from "./dto/login.dto";
@@ -45,5 +46,22 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.status !== "ACTIVE") throw new UnauthorizedException();
     return { accessToken: this.signAccess(user), refreshToken: raw };
+  }
+
+  async logout(rawToken: string): Promise<void> {
+    if (!rawToken) return;
+    const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash: sha256(rawToken) } });
+    if (stored) {
+      await this.refreshTokenService.revoke(rawToken);
+      await this.auditService.record({ action: "auth:logout", userId: stored.userId, username: (await this.prisma.user.findUnique({ where: { id: stored.userId } }))?.username ?? "" });
+    }
+  }
+
+  async sessions(userId: string) {
+    return this.refreshTokenService.list(userId);
+  }
+
+  async revokeSession(userId: string, id: string): Promise<void> {
+    await this.refreshTokenService.revokeById(userId, id);
   }
 }
