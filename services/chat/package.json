@@ -1,0 +1,23 @@
+{
+  "name": "@autix/chat",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/main.ts",
+    "build": "tsc",
+    "start": "bun run src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@autix/contracts": "workspace:*",
+    "@nestjs/common": "^11.2.1",
+    "@nestjs/core": "^11.2.1",
+    "@nestjs/platform-express": "^11.2.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  }
+}

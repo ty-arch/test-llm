@@ -1,0 +1,25 @@
+# Development override: mount source and run the dev servers.
+# Usage: docker compose -f compose.yaml -f compose.dev.yaml up
+services:
+  chat:
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+      - /app/packages/contracts/node_modules
+      - /app/services/chat/node_modules
+    command: ["bun", "run", "dev"]
+    environment:
+      NODE_ENV: development
+      PORT: "4001"
+
+  chat-web:
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+      - /app/packages/contracts/node_modules
+      - /app/clients/chat-web/node_modules
+      - /app/clients/chat-web/.next
+    command: ["bun", "run", "dev"]
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE_URL: "http://chat:4001"
