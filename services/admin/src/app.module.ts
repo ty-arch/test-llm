@@ -10,6 +10,7 @@ import { AuthzModule } from "./authz/authz.module";
 import { PermissionsGuard } from "./authz/permissions.guard";
 import { UsersModule } from "./users/users.module";
 import { RolesModule } from "./roles/roles.module";
+import { PermissionsModule } from "./permissions/permissions.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RolesModule } from "./roles/roles.module";
     AuthzModule,
     UsersModule,
     RolesModule,
+    PermissionsModule,
     // The global guard only verifies (never signs), so signOptions is intentionally omitted.
     // registerAsync (not register) so JWT_SECRET resolves after ConfigModule loads .env.
     JwtModule.registerAsync({
