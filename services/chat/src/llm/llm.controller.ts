@@ -39,4 +39,16 @@ export class LlmController {
     const results = await this.llmService.batch(body?.inputs);
     return { results };
   }
+
+  @Post("prompt-preview")
+  async promptPreview(@Body() body?: ChatDto) {
+    const messages = await this.llmService.previewPrompt(body?.input);
+    return { messages };
+  }
+
+  @Post("prompt-to-model")
+  async promptToModel(@Body() body?: ChatDto) {
+    const content = await this.llmService.invokePrompt(body?.input);
+    return { content };
+  }
 }
