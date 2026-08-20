@@ -23,3 +23,24 @@ services:
     environment:
       NODE_ENV: development
       NEXT_PUBLIC_API_BASE_URL: "http://chat:4001"
+
+  admin:
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+      - /app/services/admin/node_modules
+    command: ["bun", "run", "dev"]
+    environment:
+      NODE_ENV: development
+      PORT: "4002"
+
+  admin-web:
+    volumes:
+      - ../..:/app
+      - /app/node_modules
+      - /app/clients/admin-web/node_modules
+      - /app/clients/admin-web/.next
+    command: ["bun", "run", "dev"]
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE_URL: "http://localhost:4002"

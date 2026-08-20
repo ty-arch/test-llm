@@ -31,3 +31,52 @@ services:
     depends_on:
       chat:
         condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  admin:
+    build:
+      context: ../..
+      dockerfile: services/admin/Dockerfile
+    environment:
+      DATABASE_URL: "postgresql://admin:admin@postgres:5432/admin?schema=public"
+      JWT_SECRET: "dev-secret"
+      PORT: "4002"
+      SEED_ADMIN_PASSWORD: "admin123"
+    ports:
+      - "4002:4002"
+    depends_on:
+      postgres:
+        condition: service_started
+    healthcheck:
+      test:
+        - "CMD"
+        - "bun"
+        - "-e"
+        - "fetch('http://localhost:4002/auth/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  admin-web:
+    build:
+      context: ../..
+      dockerfile: clients/admin-web/Dockerfile
+    ports:
+      - "3003:3003"
+    depends_on:
+      admin:
+        condition: service_healthy
+
+volumes:
+  pgdata:
