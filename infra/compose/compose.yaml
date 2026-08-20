@@ -42,6 +42,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   admin:
     build:
@@ -56,7 +62,7 @@ services:
       - "4002:4002"
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
     healthcheck:
       test:
         - "CMD"
