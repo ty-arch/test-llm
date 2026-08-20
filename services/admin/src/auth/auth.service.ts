@@ -61,6 +61,11 @@ export class AuthService {
     return this.refreshTokenService.list(userId);
   }
 
+  // Temporary placeholder — Task 13 replaces this with the full { user, permissions, menuTree } return.
+  async me(id: string) {
+    return { id };
+  }
+
   async revokeSession(userId: string, id: string): Promise<void> {
     await this.refreshTokenService.revokeById(userId, id);
   }

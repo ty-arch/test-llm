@@ -1,12 +1,15 @@
-import { Body, Controller, Ip, Post, Req, Res, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Get, Ip, Param, Post, Req, Res, UnauthorizedException } from "@nestjs/common";
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
+import { CurrentUser, AuthUser } from "./current-user.decorator";
+import { Public } from "./public.decorator";
 
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Public()
   @Post("login")
   async login(@Body() dto: LoginDto, @Ip() ip: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto, ip, req.headers["user-agent"]);
@@ -20,6 +23,7 @@ export class AuthController {
     return { accessToken: result.accessToken };
   }
 
+  @Public()
   @Post("refresh")
   async refresh(@Req() req: Request, @Ip() ip: string, @Res({ passthrough: true }) res: Response) {
     const raw = req.cookies?.refresh_token;
@@ -42,5 +46,19 @@ export class AuthController {
     return { ok: true };
   }
 
-  // @Get("sessions") / @Post("sessions/:id/revoke") 在 Task 7 的 @CurrentUser 就绪后添加
+  @Get("sessions")
+  async sessions(@CurrentUser() user: AuthUser) {
+    return this.authService.sessions(user.id);
+  }
+
+  @Post("sessions/:id/revoke")
+  async revokeSession(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    await this.authService.revokeSession(user.id, id);
+    return { ok: true };
+  }
+
+  @Get("me")
+  async me(@CurrentUser() user: AuthUser) {
+    return this.authService.me(user.id);
+  }
 }
