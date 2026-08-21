@@ -4,7 +4,7 @@ import { buildRequirementPrompt } from "./requirement.prompt-builder";
 import { requirementChain } from "./requirement.chain";
 
 // 统一输入。
-const DEFAULT_INPUT = "用户注册时必须绑定手机号，密码至少8位";
+export const DEFAULT_INPUT = "用户注册时必须绑定手机号，密码至少8位";
 
 @Injectable()
 export class LlmService {

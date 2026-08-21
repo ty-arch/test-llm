@@ -1,11 +1,15 @@
 import { Body, Controller, Post, Res } from "@nestjs/common";
 import type { Response } from "express";
-import { LlmService } from "./llm.service";
+import { LlmService, DEFAULT_INPUT } from "./llm.service";
+import { RequirementService } from "./requirement.service";
 import { BatchChatDto, ChatDto } from "./dto/chat.dto";
 
 @Controller("api/langchain")
 export class LlmController {
-  constructor(private readonly llmService: LlmService) {}
+  constructor(
+    private readonly llmService: LlmService,
+    private readonly requirementService: RequirementService,
+  ) {}
 
   @Post("invoke")
   async invoke(@Body() body?: ChatDto) {
@@ -83,5 +87,10 @@ export class LlmController {
   async chainBatch(@Body() body?: BatchChatDto) {
     const results = await this.llmService.chainBatch(body?.inputs);
     return { results };
+  }
+
+  @Post("structured")
+  async structured(@Body() body?: ChatDto) {
+    return this.requirementService.extract(body?.input ?? DEFAULT_INPUT);
   }
 }
