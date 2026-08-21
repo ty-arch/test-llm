@@ -51,4 +51,37 @@ export class LlmController {
     const content = await this.llmService.invokePrompt(body?.input);
     return { content };
   }
+
+  @Post("chain-invoke")
+  async chainInvoke(@Body() body?: ChatDto) {
+    const content = await this.llmService.chainInvoke(body?.input);
+    return { content };
+  }
+
+  @Post("chain-stream")
+  async chainStream(@Body() body: ChatDto | undefined, @Res() res: Response) {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+
+    try {
+      for await (const text of this.llmService.chainStream(body?.input)) {
+        res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
+      }
+      res.write("data: [DONE]\n\n");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    } finally {
+      res.end();
+    }
+  }
+
+  @Post("chain-batch")
+  async chainBatch(@Body() body?: BatchChatDto) {
+    const results = await this.llmService.chainBatch(body?.inputs);
+    return { results };
+  }
 }

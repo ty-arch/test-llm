@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { createChatModel } from "./model.factory";
 import { buildRequirementPrompt } from "./requirement.prompt-builder";
+import { requirementChain } from "./requirement.chain";
 
 // 统一输入。
 const DEFAULT_INPUT = "用户注册时必须绑定手机号，密码至少8位";
@@ -61,5 +62,21 @@ export class LlmService {
     const messages = await this.buildMessages(input);
     const result = await this.model.invoke(messages);
     return this.extractText(result.content);
+  }
+
+  // 链调用：模板 → 模型 → 字符串输出（LCEL pipe 链）。
+  async chainInvoke(input = DEFAULT_INPUT): Promise<string> {
+    return requirementChain.invoke({ input });
+  }
+
+  async *chainStream(input = DEFAULT_INPUT): AsyncGenerator<string> {
+    const stream = await requirementChain.stream({ input });
+    for await (const chunk of stream) {
+      if (chunk) yield chunk;
+    }
+  }
+
+  async chainBatch(inputs = [DEFAULT_INPUT]): Promise<string[]> {
+    return requirementChain.batch(inputs.map((input) => ({ input })));
   }
 }
