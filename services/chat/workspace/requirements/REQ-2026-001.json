@@ -1,0 +1,9 @@
+{
+  "requirementId": "REQ-2026-001",
+  "title": "需求分析助手",
+  "description": "构建一个需求分析助手，支持多轮对话、需求单查询、文件读写与需求完整性判断。",
+  "status": "评审中",
+  "priority": "高",
+  "owner": "产品组",
+  "createdAt": "2026-08-24"
+}
