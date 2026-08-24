@@ -16,7 +16,9 @@ type RouteKey =
   | "chainInvoke"
   | "chainStream"
   | "chainBatch"
-  | "structured";
+  | "structured"
+  | "toolBind"
+  | "toolLoop";
 
 type Mode = "fetch" | "stream" | "batch";
 
@@ -40,9 +42,11 @@ const ROUTES: RouteDef[] = [
   { key: "chainStream", label: "chain-stream", path: "/api/langchain/chain-stream", group: "链 (LCEL)", mode: "stream" },
   { key: "chainBatch", label: "chain-batch", path: "/api/langchain/chain-batch", group: "链 (LCEL)", mode: "batch" },
   { key: "structured", label: "structured", path: "/api/langchain/structured", group: "结构化", mode: "fetch" },
+  { key: "toolBind", label: "tool-bind", path: "/api/langchain/tool-bind", group: "工具调用", mode: "fetch" },
+  { key: "toolLoop", label: "tool-loop", path: "/api/langchain/tool-loop", group: "工具调用", mode: "fetch" },
 ];
 
-const GROUPS = ["模型直调", "提示词", "链 (LCEL)", "结构化"];
+const GROUPS = ["模型直调", "提示词", "链 (LCEL)", "结构化", "工具调用"];
 
 export default function Home() {
   const [input, setInput] = useState(DEFAULT_INPUT);

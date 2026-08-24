@@ -93,4 +93,14 @@ export class LlmController {
   async structured(@Body() body?: ChatDto) {
     return this.requirementService.extract(body?.input ?? DEFAULT_INPUT);
   }
+
+  @Post("tool-bind")
+  async toolBind(@Body() body?: ChatDto) {
+    return this.llmService.toolBind(body?.input);
+  }
+
+  @Post("tool-loop")
+  async toolLoop(@Body() body?: ChatDto) {
+    return this.llmService.toolLoop(body?.input);
+  }
 }
