@@ -6,6 +6,6 @@ import { RequirementService } from "./requirement.service";
 @Module({
   controllers: [LlmController],
   providers: [LlmService, RequirementService],
-  exports: [LlmService],
+  exports: [LlmService, RequirementService],
 })
 export class LlmModule {}
