@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { join } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { BaseMessage, HumanMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
 import { createChatModel } from "../model.factory";
-import { createBusinessTools } from "../tools/business.tools";
+import { createBusinessTools, safePath } from "../tools/business.tools";
 
 // workspace 根目录：services/chat/workspace。
 // 源码运行（bun）与构建运行（dist）下，__dirname 相对层级一致（src/llm/filesystem 与 dist/llm/filesystem）。
@@ -38,6 +39,14 @@ export class FilesystemService {
 
   private buildMessages(input: string): BaseMessage[] {
     return [new SystemMessage(FILESYSTEM_SYSTEM_PROMPT), new HumanMessage(input)];
+  }
+
+  // 将内容写入 workspace/ 下指定路径（经 safePath 沙箱校验），返回绝对路径。
+  writeFile(relativePath: string, content: string): string {
+    const file = safePath(WORKSPACE_ROOT, relativePath);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, content, "utf8");
+    return file;
   }
 
   // 完整工具执行闭环：模型调用工具 → 执行并回填结果 → 直到模型给出最终答案（或达到上限）。
