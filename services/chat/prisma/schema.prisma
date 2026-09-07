@@ -1,0 +1,97 @@
+// Chat 服务数据库模型（需求管理 / 文档 / 向量 / 任务事件）。
+// 用户体系由 user-system 微服务维护，这里只用裸 String userId 关联，不建 User 表。
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [vector]
+}
+
+// 消息角色：用户 / 助手。
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+// 任务状态。
+enum TaskStatus {
+  pending
+  processing
+  done
+  error
+}
+
+// 对话会话：按 userId 归属，标题 + 时间戳。
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  Message[]
+
+  @@index([userId])
+}
+
+// 单条消息：属于某个对话，内容 + 可选的元数据 JSON。
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// 上传的文档/文件元数据：归属用户，记录存储方式与解析状态。
+model Document {
+  id          String   @id @default(cuid())
+  userId      String
+  filename    String
+  mimeType    String
+  size        Int
+  filePath    String?
+  storageType String   @default("local")
+  status      String   @default("pending")
+  chunkCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  chunks      DocumentChunk[]
+
+  @@index([userId])
+}
+
+// 文档分块 + 向量：embedding 列由 pgvector 扩展提供（dimensions 校验由迁移保证）。
+model DocumentChunk {
+  id           String   @id @default(cuid())
+  documentId   String
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content      String
+  chunkIndex   Int
+  embedding    Unsupported("vector")
+  createdAt    DateTime @default(now())
+
+  @@index([documentId, chunkIndex])
+}
+
+// 任务事件（异步处理进度/通知）：归属用户，记录类型、关联任务与读取状态。
+model TaskEvent {
+  id        String     @id @default(cuid())
+  userId    String
+  taskType  String
+  taskId    String
+  status    TaskStatus
+  message   String?
+  metadata  Json?
+  createdAt DateTime   @default(now())
+  readAt    DateTime?
+
+  @@index([userId, readAt])
+  @@index([taskType, taskId])
+}
