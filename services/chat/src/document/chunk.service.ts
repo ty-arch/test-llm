@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
-import { EmbeddingService } from "../llm/embedding/embedding.service";
+import { EmbeddingService } from "./embedding.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DocumentService } from "./document.service";
 import { extractText, UnsupportedFormatError } from "./parsers/parser.factory";
@@ -61,7 +61,7 @@ export class ChunkService {
       await this.prisma.document.update({ where: { id: documentId }, data: { status: "error" } });
       throw new Error("未能从文件中分块出任何文本");
     }
-    const vectors = await this.embeddingService.embedDocuments(chunks);
+    const vectors = await this.embeddingService.embedTexts(chunks);
 
     // pgvector 列（embedding）为 Unsupported("vector")，Prisma 客户端无法直接写入，
     // 故用原始 SQL 一次一个 chunk 插入（embedding 以文本字面量 + ::vector 传入）。
