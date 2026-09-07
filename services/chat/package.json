@@ -18,6 +18,7 @@
     "@langchain/openai": "^1.5.9",
     "@nestjs/common": "^11.2.1",
     "@nestjs/core": "^11.2.1",
+    "@nestjs/jwt": "^11.0.0",
     "@nestjs/platform-express": "^11.2.1",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
