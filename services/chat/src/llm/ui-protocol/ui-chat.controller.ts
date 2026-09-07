@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { uiActionSchema } from "./ui-schemas";
 import { UIAction } from "./ui-types";
 import { UiFlowService } from "./ui-flow.service";
-import { UiResponseService } from "./ui-response.service";
+import { UiResponseService, detectIntent } from "./ui-response.service";
 
 interface UiChatBody {
   sessionId?: string;
@@ -30,11 +30,15 @@ export class UiChatController {
     const input = body?.input?.trim();
     if (!input) return { error: "input 不能为空" };
     const sessionId = body?.sessionId ?? "default";
-    const data = await this.uiResponseService.generateUIResponse(
-      input,
-      body?.history,
-      body?.context,
-    );
+
+    // 06-02：以「我要提一个新需求…」开场的输入先进入交互状态机（select_type），
+    // 并把补充说明存入 collectedData.note；其余输入走 UI 响应服务（含 Structured Output）。
+    let data;
+    if (detectIntent(input) === "new_requirement") {
+      data = await this.uiFlowService.startNew(sessionId, input);
+    } else {
+      data = await this.uiResponseService.generateUIResponse(input, body?.history, body?.context);
+    }
     return { sessionId, data };
   }
 

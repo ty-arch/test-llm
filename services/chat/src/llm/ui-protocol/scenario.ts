@@ -24,13 +24,40 @@ export const FLOW_STEPS = [
   "输出分析报告",
 ];
 
-// 需求类型选项（selection 用）。
+// 需求类型选项（selection 用）。value 面向 UI 前端（06-02 场景用 functional 等）。
 export const REQUIREMENT_TYPE_OPTIONS = [
-  { value: "feature", label: "新功能", description: "新增业务能力或模块" },
+  { value: "functional", label: "功能需求", description: "新增或改造业务功能，如批量导入 Excel" },
   { value: "bug", label: "缺陷修复", description: "线上缺陷的修复" },
   { value: "optimize", label: "优化改进", description: "体验或性能优化" },
   { value: "risk", label: "风险/合规", description: "风险控制与合规要求" },
 ];
+
+// 需求类型值的别名归一：兼容 06-01 的 feature/新功能 等写法 → 统一到 canonical value。
+const TYPE_ALIASES: Record<string, string> = {
+  feature: "functional",
+  新功能: "functional",
+  功能: "functional",
+  功能需求: "functional",
+  "new-feature": "functional",
+  bugfix: "bug",
+  缺陷: "bug",
+  缺陷修复: "bug",
+  优化: "optimize",
+  优化改进: "optimize",
+  risk: "risk",
+  风险: "risk",
+  合规: "risk",
+  "风险/合规": "risk",
+};
+
+// 把用户回传的类型值解析为 { canonical value, label }；无法识别返回 null。
+export function resolveTypeValue(value: string): { value: string; label: string } | null {
+  const raw = String(value ?? "").trim().toLowerCase();
+  if (!raw) return null;
+  const canonical = TYPE_ALIASES[raw] ?? raw;
+  const option = REQUIREMENT_TYPE_OPTIONS.find((item) => item.value === canonical);
+  return option ?? null;
+}
 
 // 演示用的需求单（card 用）。REQ-20240315-001 是对应课程的示例单号。
 export const DEMO_REQUIREMENT = {
@@ -139,8 +166,8 @@ export function commitAnalysis(): AIUIResponse {
   };
 }
 
-// 步骤 2：填写需求详情（form + steps）。
-export function detailForm(typeValue: string, typeLabel: string): AIUIResponse {
+// 步骤 2：填写需求详情（form + steps）。message 可覆盖提示文案（如回退到本步时）。
+export function detailForm(typeValue: string, typeLabel: string, message?: string): AIUIResponse {
   const fields: FormField[] = [
     {
       name: "title",
@@ -183,7 +210,7 @@ export function detailForm(typeValue: string, typeLabel: string): AIUIResponse {
     fields,
   };
   return {
-    message: `已选择需求类型：${typeLabel}。请补充以下信息，方便分析。`,
+    message: message ?? `已选择需求类型：${typeLabel}。请补充以下信息，方便分析。`,
     ui: [form, stepsFor(1)],
   };
 }
@@ -237,6 +264,72 @@ export function analysisDone(draft: { typeLabel: string; title: string; descript
   return {
     message: "需求分析已完成。",
     ui: [steps, card, buttons],
+  };
+}
+
+// 流程中已收集的需求数据（06-02 状态机 context.collectedData 的对外形状）。
+export interface RequirementCollected {
+  type?: string;
+  typeLabel?: string;
+  title?: string;
+  description?: string;
+  priority?: string;
+  due?: string;
+  note?: string;
+  id?: string;
+}
+
+// Stage 3 确认提交：confirmation + card（卡片展示需求摘要）。
+export function confirmAndCard(d: RequirementCollected): AIUIResponse {
+  const description = (d.description || d.note || "").trim() || "—";
+  const card: CardUI = {
+    type: "card",
+    title: d.title?.trim() || "未命名需求",
+    subtitle: `需求类型：${d.typeLabel ?? "-"}`,
+    tag: "待确认",
+    rows: [
+      ...(d.id ? [{ label: "需求单号", value: d.id }] : []),
+      { label: "需求类型", value: d.typeLabel ?? "-" },
+      { label: "优先级", value: d.priority || "中" },
+      ...(d.due ? [{ label: "期望上线", value: d.due }] : []),
+      { label: "需求说明", value: description },
+    ],
+    footer: description.length > 40 ? "（说明已折叠，请确认后开始分析）" : undefined,
+  };
+  const confirmation: ConfirmationUI = {
+    type: "confirmation",
+    title: "确认提交需求分析",
+    summary: "请核对以下需求信息，确认后将进入需求分析：",
+    details: [
+      { label: "需求类型", value: d.typeLabel ?? "-" },
+      { label: "标题", value: d.title?.trim() || "未命名需求" },
+      { label: "优先级", value: d.priority || "中" },
+    ],
+    confirmActionId: "confirm",
+    cancelActionId: "cancel",
+    confirmLabel: "确认并提交分析",
+    cancelLabel: "返回修改",
+  };
+  return {
+    message: "信息已核对，请确认提交。",
+    ui: [confirmation, card],
+  };
+}
+
+// Stage 4 结果：steps（流程已完成）+ action_buttons（后续操作）。
+export function resultView(d: RequirementCollected): AIUIResponse {
+  const steps = stepsFor(FLOW_STEPS.length);
+  const buttons: ActionButtonsUI = {
+    type: "action_buttons",
+    title: "后续操作",
+    buttons: [
+      { actionId: "view_report", label: "查看分析报告", variant: "primary" },
+      { actionId: "start_over", label: "再提一个需求", variant: "default" },
+    ],
+  };
+  return {
+    message: `需求「${d.title?.trim() || "未命名需求"}」分析已完成。`,
+    ui: [steps, buttons],
   };
 }
 
