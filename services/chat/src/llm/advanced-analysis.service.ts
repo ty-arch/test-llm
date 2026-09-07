@@ -1,87 +1,101 @@
 import { Injectable } from "@nestjs/common";
-import { join } from "node:path";
-import { OrchestratorService } from "./agents/orchestrator.service";
-import { FilesystemService } from "./filesystem/filesystem.service";
-import { RunnableMemoryService } from "./memory/runnable-memory.service";
+import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
+import { MessageRole } from "@prisma/client";
+import { ConversationService } from "../conversation/conversation.service";
+import { SearchService, SearchHit } from "../document/search.service";
+import { DbChatHistory } from "../message/db-chat-history";
+import { MessageService, messageText } from "../message/message.service";
+import { OrchestratorService, OrchestrateResult } from "./agents/orchestrator.service";
 
 // 统一分析结果（固定字段集合，保证返回结构稳定）。
 export interface AnalyzeResult {
   status: "completed" | "clarification_needed" | "failed";
   clarificationQuestions: string[];
   report: string | null;
-  reportPath: string | null;
   usedAgents: string[];
-  fallback: "manual_review" | null;
+  retrievedDocuments: SearchHit[];
 }
 
-// 会话 id 转安全文件名（只保留字母数字、-、_，其余替换为 -）。
-function sanitize(value: string): string {
-  const cleaned = value.replace(/[^a-zA-Z0-9_-]/g, "-");
-  return cleaned || "session";
-}
+// 拼接进背景资料的历史消息条数上限（防止无限增长撑爆上下文）。
+const MAX_HISTORY = 8;
 
+// 统一分析入口：读取会话历史 → 语义检索用户文档 → 多 Agent 编排分析 →
+// 把用户输入与分析结论落库 messages 表 → 返回 report/usedAgents/retrievedDocuments。
+// 该服务在 ConversationModule 中提供（避免 AdvancedModule <-> DocumentModule 循环依赖）。
 @Injectable()
 export class AdvancedAnalysisService {
   constructor(
+    private readonly conversationService: ConversationService,
+    private readonly searchService: SearchService,
+    private readonly messageService: MessageService,
     private readonly orchestrator: OrchestratorService,
-    private readonly filesystem: FilesystemService,
-    private readonly memory: RunnableMemoryService,
   ) {}
 
-  // 从会话历史中抽取用户侧描述，与本次输入合并为分析上下文。
-  private buildContext(history: { role: string; content: string }[], input: string): string {
-    const userStated = history.filter((m) => m.role === "human").map((m) => m.content);
-    return [...userStated, input].filter((text) => text.trim().length > 0).join("\n");
+  // 把 LangChain 历史消息格式化为「用户/助手」文本（只取最近 MAX_HISTORY 条）。
+  private formatHistory(messages: BaseMessage[]): string {
+    const recent = messages.slice(-MAX_HISTORY);
+    return recent
+      .map((message) => {
+        const who = message instanceof HumanMessage ? "用户" : message instanceof AIMessage ? "助手" : "系统";
+        return `${who}：${messageText(message)}`;
+      })
+      .join("\n");
   }
 
-  // 统一入口：读取历史 → 多 Agent 分析 → 澄清短路 → 写报告 → 回写记忆 → 返回报告。
-  async analyze(sessionId: string, input: string): Promise<AnalyzeResult> {
-    // 0. 读取会话历史，把前三轮用户描述与本次输入合并，作为分析上下文。
-    const history = await this.memory.getHistory(sessionId);
-    const context = this.buildContext(history, input);
+  // 编排失败时的兜底结论文案（failed 状态不产出 report）。
+  private assistantConclusion(result: OrchestrateResult): string | null {
+    if (result.status === "completed" && result.report) return result.report;
+    if (result.status === "clarification_needed" && result.clarificationQuestions.length > 0) {
+      return ["需要补充以下信息：", ...result.clarificationQuestions.map((q) => `- ${q}`)].join("\n");
+    }
+    if (result.status === "failed") {
+      return "抱歉，本次需求分析未能完成。请补充更明确的需求描述后重试，或转人工处理。";
+    }
+    return null;
+  }
 
-    // 1. 调用 OrchestratorService 执行多 Agent 分析。
-    const result = await this.orchestrator.orchestrate(context);
+  // 统一入口：会话归属校验 → 历史 + 检索上下文 + 当前输入 → 多 Agent 分析 → 落库。
+  async analyze(userId: string, conversationId: string, input: string): Promise<AnalyzeResult> {
+    // 0. 归属校验（非本人或不存在则抛 403/404）。
+    await this.conversationService.findById(conversationId, userId);
 
-    // 2. 需要澄清则直接返回澄清问题。
-    if (result.status === "clarification_needed") {
-      return {
-        status: "clarification_needed",
-        clarificationQuestions: result.clarificationQuestions,
-        report: null,
-        reportPath: null,
+    // 1. DbChatHistory 读取会话历史。
+    const history = new DbChatHistory(conversationId, this.messageService);
+    const past = await history.getMessages();
+    const historyText = this.formatHistory(past);
+
+    // 2. SearchService 语义检索当前用户文档（topK=3）。
+    const hits = await this.searchService.similaritySearch(input, userId, 3);
+
+    // 3. 拼接「历史 + 检索上下文」作为背景资料（当前输入单独作为抽取/分析对象）。
+    const parts: string[] = [];
+    if (historyText) parts.push(`【会话历史】\n${historyText}`);
+    if (hits.length > 0) {
+      const docsText = hits.map((hit) => `- ${hit.content}`).join("\n");
+      parts.push(`【检索到的文档资料】\n${docsText}`);
+    }
+    const retrievedContext = parts.join("\n\n");
+
+    // 4. OrchestratorService 执行多 Agent 分析（输入 + 背景资料）。
+    const result = await this.orchestrator.orchestrate(input, retrievedContext);
+
+    // 5. 用户输入与分析结论写入 messages 表。
+    await this.messageService.addMessage(conversationId, MessageRole.USER, input);
+    const assistantContent = this.assistantConclusion(result);
+    if (assistantContent) {
+      await this.messageService.addMessage(conversationId, MessageRole.ASSISTANT, assistantContent, {
+        status: result.status,
         usedAgents: result.usedAgents,
-        fallback: null,
-      };
+      });
     }
 
-    // 失败则返回兜底，不写报告、不回写记忆。
-    if (result.status === "failed" || !result.report) {
-      return {
-        status: "failed",
-        clarificationQuestions: [],
-        report: null,
-        reportPath: null,
-        usedAgents: result.usedAgents,
-        fallback: result.fallback,
-      };
-    }
-
-    // 3. 将报告写入 reports/ 目录。
-    const filename = `${sanitize(sessionId)}-${Date.now()}.md`;
-    const reportPath = this.filesystem.writeFile(join("reports", filename), result.report);
-
-    // 4. 用 appendMessage() 写回最终结论（不重新调用模型）。
-    await this.memory.appendMessage(sessionId, input, result.report);
-
-    // 5. 返回完整分析报告。
+    // 6. 返回 report、usedAgents、retrievedDocuments。
     return {
-      status: "completed",
-      clarificationQuestions: [],
+      status: result.status,
+      clarificationQuestions: result.clarificationQuestions,
       report: result.report,
-      reportPath,
       usedAgents: result.usedAgents,
-      fallback: null,
+      retrievedDocuments: hits,
     };
   }
 }

@@ -44,9 +44,14 @@ function parseJson<T>(text: string): T | null {
 @Injectable()
 export class OrchestratorService {
   // 固定编排：抽取 → 澄清判断 → 并行(分析 + 风控) → 汇总。
-  async orchestrate(input: string): Promise<OrchestrateResult> {
+  // retrievedContext：会话历史与检索文档等背景资料，作为参考注入到澄清/分析/风控/汇总
+  // 四个 Agent 的提示中；不参与抽取（抽取只针对用户原始输入，避免文档内容污染 JSON 字段）。
+  async orchestrate(input: string, retrievedContext = ""): Promise<OrchestrateResult> {
     const steps: OrchestrateStep[] = [];
     const usedAgents: string[] = [];
+    const contextBlock = retrievedContext?.trim()
+      ? `\n背景资料（会话历史与检索到的用户文档，若与需求相关请作为依据引用）：\n${retrievedContext.trim()}`
+      : "";
 
     try {
       // 1. 抽取结构化字段。
@@ -66,6 +71,7 @@ export class OrchestratorService {
       const clarifyRaw = await clarifyAgent.invoke({
         input,
         extractResult: JSON.stringify(extractResult),
+        retrievedContext: contextBlock,
       });
       usedAgents.push("clarifyAgent");
       steps.push({ agent: "clarifyAgent", status: "ok", output: clarifyRaw });
@@ -88,8 +94,16 @@ export class OrchestratorService {
 
       // 4. 并行执行：多维度分析 + 风险识别。
       const [analysisRaw, riskRaw] = await Promise.all([
-        analysisAgent.invoke({ input, extractResult: JSON.stringify(extractResult) }),
-        riskAgent.invoke({ input, extractResult: JSON.stringify(extractResult) }),
+        analysisAgent.invoke({
+          input,
+          extractResult: JSON.stringify(extractResult),
+          retrievedContext: contextBlock,
+        }),
+        riskAgent.invoke({
+          input,
+          extractResult: JSON.stringify(extractResult),
+          retrievedContext: contextBlock,
+        }),
       ]);
       usedAgents.push("analysisAgent", "riskAgent");
       steps.push({ agent: "analysisAgent", status: "ok", output: analysisRaw });
@@ -101,6 +115,7 @@ export class OrchestratorService {
         extractResult: JSON.stringify(extractResult),
         analysisResult: analysisRaw,
         riskResult: riskRaw,
+        retrievedContext: contextBlock,
       });
       usedAgents.push("summaryAgent");
       steps.push({ agent: "summaryAgent", status: "ok", output: reportRaw });

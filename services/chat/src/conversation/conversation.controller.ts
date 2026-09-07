@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/c
 import type { AuthUser } from "../auth/current-user.decorator";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { AdvancedAnalysisService } from "../llm/advanced-analysis.service";
 import { MessageService } from "../message/message.service";
 import { ConversationService } from "./conversation.service";
 
@@ -20,6 +21,7 @@ export class ConversationController {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
+    private readonly advancedAnalysis: AdvancedAnalysisService,
   ) {}
 
   // POST /api/conversations —— 创建会话
@@ -41,13 +43,14 @@ export class ConversationController {
     return this.messageService.getHistory(id);
   }
 
-  // POST /api/conversations/:id/chat —— 在指定会话中发送消息
+  // POST /api/conversations/:id/chat —— 统一分析入口（非流式 JSON）。
+  // 走 AdvancedAnalysisService：读历史 → 检索文档 → 多 Agent 分析 → 落库消息，
+  // 返回 report / usedAgents / retrievedDocuments。第六章再升级为流式 UI。
   @Post(":id/chat")
   async chat(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body() body?: ChatBody) {
     const input = body?.input?.trim();
     if (!input) return { error: "input 不能为空" };
-    const content = await this.conversationService.chat(id, user.id, input);
-    return { content };
+    return this.advancedAnalysis.analyze(user.id, id, input);
   }
 
   // DELETE /api/conversations/:id —— 删除会话

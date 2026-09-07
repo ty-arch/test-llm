@@ -57,7 +57,7 @@ export const clarifyPrompt = ChatPromptTemplate.fromMessages([
 
 已抽取的结构化信息：
 {extractResult}
-
+{retrievedContext}
 请判断是否需要澄清。`,
   ],
 ]);
@@ -81,7 +81,7 @@ export const analysisPrompt = ChatPromptTemplate.fromMessages([
 
 已抽取的结构化信息：
 {extractResult}
-
+{retrievedContext}
 请进行多维度需求分析。`,
   ],
 ]);
@@ -104,7 +104,7 @@ export const riskPrompt = ChatPromptTemplate.fromMessages([
 
 已抽取的结构化信息：
 {extractResult}
-
+{retrievedContext}
 请进行风险识别与评估。`,
   ],
 ]);
@@ -136,7 +136,7 @@ export const summaryPrompt = ChatPromptTemplate.fromMessages([
 
 风险评估：
 {riskResult}
-
+{retrievedContext}
 请生成最终需求分析报告。`,
   ],
 ]);
