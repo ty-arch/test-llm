@@ -87,6 +87,8 @@ export default function DemoPage() {
       <h1>LangChain 能力演示</h1>
       <p>
         <a href="/">← 返回需求抽取</a>
+        {"　"}
+        <a href="/ui-chat">AI UI 聊天 →</a>
       </p>
 
       <label style={{ display: "block", marginTop: "1rem" }}>

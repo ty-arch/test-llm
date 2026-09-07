@@ -79,6 +79,8 @@ export default function Home() {
 
       <p style={{ marginTop: "2rem", color: "#888" }}>
         <a href="/demo">查看全部 LangChain 能力演示 →</a>
+        {"　"}
+        <a href="/ui-chat">AI UI 聊天（需求分析助手） →</a>
       </p>
     </main>
   );
