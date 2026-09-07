@@ -9,6 +9,7 @@ import { AuthModule } from "./auth/auth.module";
 import { ConversationModule } from "./conversation/conversation.module";
 import { DocumentModule } from "./document/document.module";
 import { SseModule } from "./sse/sse.module";
+import { UiModule } from "./llm/ui-protocol/ui.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SseModule } from "./sse/sse.module";
     ConversationModule,
     DocumentModule,
     SseModule,
+    UiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
