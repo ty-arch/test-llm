@@ -16,6 +16,7 @@
     "@langchain/classic": "^1.0.45",
     "@langchain/core": "^1.2.9",
     "@langchain/openai": "^1.5.9",
+    "@langchain/textsplitters": "^1.0.1",
     "@nestjs/common": "^11.2.1",
     "@nestjs/core": "^11.2.1",
     "@nestjs/jwt": "^11.0.0",

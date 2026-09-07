@@ -17,6 +17,7 @@ import type { Response } from "express";
 import type { AuthUser } from "../auth/current-user.decorator";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { ChunkService } from "./chunk.service";
 import type { UploadFile } from "./document.service";
 import { ALLOWED_MIME_TYPES, DocumentService, MAX_FILE_SIZE } from "./document.service";
 
@@ -24,7 +25,10 @@ import { ALLOWED_MIME_TYPES, DocumentService, MAX_FILE_SIZE } from "./document.s
 @Controller("api/documents")
 @UseGuards(JwtAuthGuard)
 export class DocumentController {
-  constructor(private readonly documentService: DocumentService) {}
+  constructor(
+    private readonly documentService: DocumentService,
+    private readonly chunkService: ChunkService,
+  ) {}
 
   // POST /api/documents/upload —— multipart 内存存储上传，fileFilter 拦截非法类型。
   @Post("upload")
@@ -57,9 +61,9 @@ export class DocumentController {
     @Param("id") id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const doc = await this.documentService.startProcessing(id, user.id);
+    await this.chunkService.startProcessing(id, user.id);
     res.status(202);
-    return { id: doc.id, status: "processing" };
+    return { id, status: "processing" };
   }
 
   // GET /api/documents —— 当前用户文档列表。
