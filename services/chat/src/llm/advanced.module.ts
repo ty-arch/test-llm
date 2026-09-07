@@ -29,6 +29,6 @@ import { AdvancedController } from "./advanced.controller";
     OrchestratorService,
     AdvancedAnalysisService,
   ],
-  exports: [AdvancedAnalysisService],
+  exports: [AdvancedAnalysisService, EmbeddingService],
 })
 export class AdvancedModule {}
